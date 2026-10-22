@@ -15,3 +15,11 @@ An AI powered Database Schema Intelligence Platform designed to detect breaking 
 
 - **AI**
     - OpenAI API
+
+## Setting Up (Development)
+
+**Environment Variables**
+Before you can get started you have to setup your environment variables. Create your own copy of the env file and fill up the required variables. Copy the env example using this command to create your own .env file 
+```bash
+cp .env.example .env
+```
