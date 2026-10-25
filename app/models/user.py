@@ -29,4 +29,7 @@ class UserSession(Base):
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), index=True)
     token_hash: Mapped[str] = mapped_column(String, index=True, unique=True)
-    expires_at: Mapped[datetime] = mapped_column()
+    expires_at: Mapped[datetime] = mapped_column(
+    DateTime(timezone=True),
+    nullable=False
+)
