@@ -23,6 +23,15 @@ Before you can get started you have to setup your environment variables. Create 
 ```bash
 cp .env.example .env
 ```
+Set `FRONTEND_ORIGIN` to the exact origin of the client application (for example,
+`http://localhost:3000`). Credentialed browser requests are restricted to this
+origin; configure the deployed client origin in production.
+Set `API_ORIGIN` to the public origin of this FastAPI server (for example,
+`http://localhost:8000`). The server builds the GitHub callback URL as
+`<API_ORIGIN>/api/v1/auth/github/callback`; register that exact URL in the
+GitHub OAuth app. GitHub login and callback traffic go directly to FastAPI.
+The API issues an HttpOnly session cookie, and the client validates it through
+the authenticated API endpoint.
 
 ## Development
 Complete guide on workarounds during development and improvement of the api
