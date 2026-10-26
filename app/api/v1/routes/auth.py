@@ -1,5 +1,6 @@
-import secrets
+import base64
 import hashlib
+import secrets
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
@@ -27,14 +28,14 @@ def github_login():
     verifier = secrets.token_urlsafe(64)
 
     challenge = (
-        __import__("base64").urlsafe_b64encode(
+        base64.urlsafe_b64encode(
             hashlib.sha256(verifier.encode()).digest()
         ).rstrip(b"=").decode()
     )
 
     params = {
         "client_id": settings.GITHUB_CLIENT_ID,
-        "redirect_uri": settings.GITHUB_CALLBACK_URL,
+        "redirect_uri": settings.github_callback_url,
         "state": state,
         "code_challenge": challenge,
         "code_challenge_method": "S256",
@@ -47,7 +48,7 @@ def github_login():
         key="oauth_flow",
         value=signer.dumps({"state": state, "verifier": verifier}),
         httponly=True,
-        secure=settings.APP_STAGE == 'production',
+        secure=settings.is_production,
         samesite="lax",
         max_age=600,
         path="/api/v1/auth",
@@ -80,7 +81,7 @@ def github_callback(
                 "client_id": settings.GITHUB_CLIENT_ID,
                 "client_secret": settings.GITHUB_CLIENT_SECRET,
                 "code": code,
-                "redirect_uri": settings.GITHUB_CALLBACK_URL,
+                "redirect_uri": settings.github_callback_url,
                 "code_verifier": flow["verifier"],
             },
         )
@@ -133,15 +134,15 @@ def github_callback(
     db.commit()
 
     response = RedirectResponse(
-        url="/api/v1/auth/me", status_code=303
+        url=f"{settings.FRONTEND_ORIGIN}/dashboard", status_code=303
     )
     response.delete_cookie("oauth_flow", path="/api/v1/auth")
     response.set_cookie(
         key="schema_guard_session",
         value=session_token,
         httponly=True,
-        secure=settings.APP_STAGE == 'production', 
-        samesite="lax",
+        secure=settings.is_production,
+        samesite="none" if settings.is_production else "lax",
         max_age=SESSION_DAYS * 86400,
         path="/",
     )
