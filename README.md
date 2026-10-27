@@ -32,6 +32,9 @@ Set `API_ORIGIN` to the public origin of this FastAPI server (for example,
 GitHub OAuth app. GitHub login and callback traffic go directly to FastAPI.
 The API issues an HttpOnly session cookie, and the client validates it through
 the authenticated API endpoint.
+If the API and client use different subdomains of the same domain in
+production, set `SESSION_COOKIE_DOMAIN` to their shared parent domain (for
+example, `.example.com`) so the browser sends the HttpOnly cookie to both.
 
 ## Development
 Complete guide on workarounds during development and improvement of the api

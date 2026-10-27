@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 from typing import ClassVar
 from urllib.parse import urlsplit
 
@@ -17,6 +18,7 @@ class AppSettings(BaseSettings):
     GITHUB_CLIENT_SECRET: str = Field(default=..., min_length=3)
     API_ORIGIN: str = Field(default="http://localhost:8000", min_length=1)
     SESSION_SECRET: str = Field(default=..., min_length=3)
+    SESSION_COOKIE_DOMAIN: str | None = None
     FRONTEND_ORIGIN: str = Field(default="http://localhost:3000", min_length=1)
 
     @field_validator("API_ORIGIN")
@@ -59,6 +61,28 @@ class AppSettings(BaseSettings):
             raise ValueError("FRONTEND_ORIGIN must have a valid port.") from error
         return value.rstrip("/")
 
+    @field_validator("SESSION_COOKIE_DOMAIN", mode="before")
+    @classmethod
+    def validate_session_cookie_domain(cls, value: str | None) -> str | None:
+        if value is None or not str(value).strip():
+            return None
+
+        domain = str(value).strip().lower().lstrip(".").rstrip(".")
+        labels = domain.split(".")
+        if (
+            len(domain) > 253
+            or any(
+                not label
+                or len(label) > 63
+                or label.startswith("-")
+                or label.endswith("-")
+                or not re.fullmatch(r"[a-z0-9-]+", label)
+                for label in labels
+            )
+        ):
+            raise ValueError("SESSION_COOKIE_DOMAIN must be a valid cookie domain.")
+        return f".{domain}"
+
     @property
     def github_callback_url(self) -> str:
         return f"{self.API_ORIGIN}/api/v1/auth/github/callback"
@@ -74,6 +98,14 @@ class AppSettings(BaseSettings):
             for origin in (self.API_ORIGIN, self.FRONTEND_ORIGIN)
         ):
             raise ValueError("API_ORIGIN and FRONTEND_ORIGIN must use HTTPS in production.")
+        if self.SESSION_COOKIE_DOMAIN:
+            cookie_domain = self.SESSION_COOKIE_DOMAIN.lstrip(".")
+            for origin in (self.API_ORIGIN, self.FRONTEND_ORIGIN):
+                hostname = urlsplit(origin).hostname or ""
+                if hostname != cookie_domain and not hostname.endswith(f".{cookie_domain}"):
+                    raise ValueError(
+                        "SESSION_COOKIE_DOMAIN must contain both API_ORIGIN and FRONTEND_ORIGIN."
+                    )
         return self
 
     model_config: ClassVar[SettingsConfigDict] = SettingsConfigDict(

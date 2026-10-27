@@ -134,7 +134,7 @@ def github_callback(
     db.commit()
 
     response = RedirectResponse(
-        url=f"{settings.FRONTEND_ORIGIN}/dashboard", status_code=303
+        url=f"{settings.FRONTEND_ORIGIN}/{user.github_username}", status_code=303
     )
     response.delete_cookie("oauth_flow", path="/api/v1/auth")
     response.set_cookie(
@@ -145,6 +145,7 @@ def github_callback(
         samesite="none" if settings.is_production else "lax",
         max_age=SESSION_DAYS * 86400,
         path="/",
+        domain=settings.SESSION_COOKIE_DOMAIN,
     )
     return response
 
@@ -208,5 +209,9 @@ def logout(
     from fastapi.responses import JSONResponse
 
     response = JSONResponse({"message": "Logged out"})
-    response.delete_cookie("schema_guard_session", path="/")
+    response.delete_cookie(
+        "schema_guard_session",
+        path="/",
+        domain=settings.SESSION_COOKIE_DOMAIN,
+    )
     return response
